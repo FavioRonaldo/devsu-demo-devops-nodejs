@@ -1,11 +1,11 @@
-import * as dotenv from 'dotenv'
 import { Sequelize } from 'sequelize'
+import { config } from '../config.js'
 
-dotenv.config()
+const { dialect, name, user, password, host, port, logging } = config.database
+const log = logging ? console.log : false
 
-const sequelize = new Sequelize('test-db', process.env.DATABASE_USER, process.env.DATABASE_PASSWORD, {
-  dialect: 'sqlite',
-  host: process.env.DATABASE_NAME
-})
+const sequelize = dialect === 'sqlite'
+    ? new Sequelize({ dialect, storage: name, logging: log })
+    : new Sequelize(name, user, password, { dialect, host, port, logging: log })
 
 export default sequelize

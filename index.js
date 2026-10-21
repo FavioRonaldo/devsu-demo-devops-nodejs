@@ -1,17 +1,27 @@
 import sequelize from './shared/database/database.js'
-import { usersRouter } from "./users/router.js"
-import express from 'express'
+import { config } from './shared/config.js'
+import { app } from './app.js'
 
-const app = express()
-const PORT = 8000
+try {
+    await sequelize.sync()
+    console.log('db is ready')
+} catch (error) {
+    console.error('Unable to connect to the database', { error: error.message })
+    process.exit(1)
+}
 
-sequelize.sync({ force: true }).then(() => console.log('db is ready'))
-
-app.use(express.json())
-app.use('/api/users', usersRouter)
-
-const server = app.listen(PORT, () => {
-    console.log('Server running on port PORT', PORT)
+const server = app.listen(config.port, () => {
+    console.log('Server running on port', config.port)
 })
 
-export { app, server }
+const shutdown = (signal) => {
+    console.log(`${signal} received, shutting down`)
+    setTimeout(() => process.exit(1), config.shutdownTimeoutMs).unref()
+    server.close(async () => {
+        await sequelize.close()
+        process.exit(0)
+    })
+}
+
+process.on('SIGTERM', () => shutdown('SIGTERM'))
+process.on('SIGINT', () => shutdown('SIGINT'))
