@@ -1,0 +1,41 @@
+kind_cluster.this[0]: Creating...
+kind_cluster.this[0]: Still creating... [00m10s elapsed]
+kind_cluster.this[0]: Still creating... [00m20s elapsed]
+kind_cluster.this[0]: Still creating... [00m30s elapsed]
+kind_cluster.this[0]: Still creating... [00m40s elapsed]
+kind_cluster.this[0]: Creation complete after 47s [id=devsu-demo-kindest/node:v1.35.0@sha256:452d707d4862f52530247495d180205e029056831160e22870e37e3f6c1ac31f]
+helm_release.cert_manager: Creating...
+helm_release.metrics_server: Creating...
+helm_release.traefik: Creating...
+helm_release.traefik: Creation complete after 2s [id=traefik]
+helm_release.cert_manager: Still creating... [00m10s elapsed]
+helm_release.metrics_server: Still creating... [00m10s elapsed]
+helm_release.cert_manager: Still creating... [00m20s elapsed]
+helm_release.metrics_server: Still creating... [00m20s elapsed]
+helm_release.cert_manager: Creation complete after 26s [id=cert-manager]
+helm_release.cluster_issuer: Creating...
+helm_release.cluster_issuer: Creation complete after 0s [id=cluster-issuer]
+helm_release.metrics_server: Still creating... [00m30s elapsed]
+helm_release.metrics_server: Creation complete after 31s [id=metrics-server]
+
+Apply complete! Resources: 5 added, 0 changed, 0 destroyed.
+
+Outputs:
+
+app_urls = {
+  "dev" = "https://api.dev.devsu-demo.local"
+  "prod" = "https://api.devsu-demo.local"
+  "test" = "https://api.test.devsu-demo.local"
+}
+cluster_endpoint = "https://127.0.0.1:37637"
+cluster_issuer = "devsu-demo-ca"
+cluster_name = "devsu-demo"
+hosts_file_entry = "127.0.0.1 api.dev.devsu-demo.local api.devsu-demo.local api.test.devsu-demo.local"
+ingress_class = "traefik"
+kubeconfig_path = "/home/runner/.kube/config"
+platform_releases = {
+  "cert-manager" = "cert-manager v1.21.2 (cert-manager)"
+  "cluster-issuer" = "./charts/cluster-issuer 1.0.0 (cert-manager)"
+  "metrics-server" = "metrics-server 3.14.0 (kube-system)"
+  "traefik" = "traefik 41.6.1 (traefik)"
+}

@@ -1,0 +1,17 @@
+app_urls = {
+  "dev" = "https://api.dev.devsu-demo.local"
+  "prod" = "https://api.devsu-demo.local"
+  "test" = "https://api.test.devsu-demo.local"
+}
+cluster_endpoint = "https://127.0.0.1:37637"
+cluster_issuer = "devsu-demo-ca"
+cluster_name = "devsu-demo"
+hosts_file_entry = "127.0.0.1 api.dev.devsu-demo.local api.devsu-demo.local api.test.devsu-demo.local"
+ingress_class = "traefik"
+kubeconfig_path = "/home/runner/.kube/config"
+platform_releases = {
+  "cert-manager" = "cert-manager v1.21.2 (cert-manager)"
+  "cluster-issuer" = "./charts/cluster-issuer 1.0.0 (cert-manager)"
+  "metrics-server" = "metrics-server 3.14.0 (kube-system)"
+  "traefik" = "traefik 41.6.1 (traefik)"
+}

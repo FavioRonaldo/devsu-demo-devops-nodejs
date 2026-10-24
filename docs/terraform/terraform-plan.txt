@@ -1,0 +1,277 @@
+
+Terraform used the selected providers to generate the following execution
+plan. Resource actions are indicated with the following symbols:
+  + create
+
+Terraform will perform the following actions:
+
+  # helm_release.cert_manager will be created
+  + resource "helm_release" "cert_manager" {
+      + atomic                     = false
+      + chart                      = "cert-manager"
+      + cleanup_on_fail            = false
+      + create_namespace           = true
+      + dependency_update          = false
+      + disable_crd_hooks          = false
+      + disable_openapi_validation = false
+      + disable_webhooks           = false
+      + force_update               = false
+      + id                         = (known after apply)
+      + lint                       = false
+      + max_history                = 0
+      + metadata                   = (known after apply)
+      + name                       = "cert-manager"
+      + namespace                  = "cert-manager"
+      + pass_credentials           = false
+      + recreate_pods              = false
+      + render_subchart_notes      = true
+      + replace                    = false
+      + repository                 = "https://charts.jetstack.io"
+      + reset_values               = false
+      + reuse_values               = false
+      + set                        = [
+          + {
+              + name  = "crds.enabled"
+              + value = "true"
+                # (1 unchanged attribute hidden)
+            },
+        ]
+      + set_wo                     = (write-only attribute)
+      + skip_crds                  = false
+      + status                     = "deployed"
+      + take_ownership             = false
+      + timeout                    = 300
+      + upgrade_install            = false
+      + verify                     = false
+      + version                    = "v1.21.2"
+      + wait                       = true
+      + wait_for_jobs              = false
+    }
+
+  # helm_release.cluster_issuer will be created
+  + resource "helm_release" "cluster_issuer" {
+      + atomic                     = false
+      + chart                      = "./charts/cluster-issuer"
+      + cleanup_on_fail            = false
+      + create_namespace           = false
+      + dependency_update          = false
+      + disable_crd_hooks          = false
+      + disable_openapi_validation = false
+      + disable_webhooks           = false
+      + force_update               = false
+      + id                         = (known after apply)
+      + lint                       = false
+      + max_history                = 0
+      + metadata                   = (known after apply)
+      + name                       = "cluster-issuer"
+      + namespace                  = "cert-manager"
+      + pass_credentials           = false
+      + recreate_pods              = false
+      + render_subchart_notes      = true
+      + replace                    = false
+      + reset_values               = false
+      + reuse_values               = false
+      + set_wo                     = (write-only attribute)
+      + skip_crds                  = false
+      + status                     = "deployed"
+      + take_ownership             = false
+      + timeout                    = 120
+      + upgrade_install            = false
+      + verify                     = false
+      + version                    = "1.0.0"
+      + wait                       = true
+      + wait_for_jobs              = false
+    }
+
+  # helm_release.metrics_server will be created
+  + resource "helm_release" "metrics_server" {
+      + atomic                     = false
+      + chart                      = "metrics-server"
+      + cleanup_on_fail            = false
+      + create_namespace           = false
+      + dependency_update          = false
+      + disable_crd_hooks          = false
+      + disable_openapi_validation = false
+      + disable_webhooks           = false
+      + force_update               = false
+      + id                         = (known after apply)
+      + lint                       = false
+      + max_history                = 0
+      + metadata                   = (known after apply)
+      + name                       = "metrics-server"
+      + namespace                  = "kube-system"
+      + pass_credentials           = false
+      + recreate_pods              = false
+      + render_subchart_notes      = true
+      + replace                    = false
+      + repository                 = "https://kubernetes-sigs.github.io/metrics-server/"
+      + reset_values               = false
+      + reuse_values               = false
+      + set_list                   = [
+          + {
+              + name  = "args"
+              + value = [
+                  + "--kubelet-insecure-tls",
+                ]
+            },
+        ]
+      + set_wo                     = (write-only attribute)
+      + skip_crds                  = false
+      + status                     = "deployed"
+      + take_ownership             = false
+      + timeout                    = 300
+      + upgrade_install            = false
+      + verify                     = false
+      + version                    = "3.14.0"
+      + wait                       = true
+      + wait_for_jobs              = false
+    }
+
+  # helm_release.traefik will be created
+  + resource "helm_release" "traefik" {
+      + atomic                     = false
+      + chart                      = "traefik"
+      + cleanup_on_fail            = false
+      + create_namespace           = true
+      + dependency_update          = false
+      + disable_crd_hooks          = false
+      + disable_openapi_validation = false
+      + disable_webhooks           = false
+      + force_update               = false
+      + id                         = (known after apply)
+      + lint                       = false
+      + max_history                = 0
+      + metadata                   = (known after apply)
+      + name                       = "traefik"
+      + namespace                  = "traefik"
+      + pass_credentials           = false
+      + recreate_pods              = false
+      + render_subchart_notes      = true
+      + replace                    = false
+      + repository                 = "https://traefik.github.io/charts"
+      + reset_values               = false
+      + reuse_values               = false
+      + set                        = [
+          + {
+              + name  = "service.type"
+              + value = "NodePort"
+                # (1 unchanged attribute hidden)
+            },
+          + {
+              + name  = "ports.web.nodePort"
+              + value = "30080"
+                # (1 unchanged attribute hidden)
+            },
+          + {
+              + name  = "ports.websecure.nodePort"
+              + value = "30443"
+                # (1 unchanged attribute hidden)
+            },
+        ]
+      + set_wo                     = (write-only attribute)
+      + skip_crds                  = false
+      + status                     = "deployed"
+      + take_ownership             = false
+      + timeout                    = 300
+      + upgrade_install            = false
+      + values                     = [
+          + <<-EOT
+                ingressClass:
+                  enabled: true
+                  isDefaultClass: true
+                
+                ports:
+                  web:
+                    http:
+                      redirections:
+                        entryPoint:
+                          to: websecure
+                          scheme: https
+                          permanent: true
+                
+                service:
+                  type: LoadBalancer
+                
+                resources:
+                  requests:
+                    cpu: 50m
+                    memory: 64Mi
+                  limits:
+                    cpu: 500m
+                    memory: 256Mi
+            EOT,
+        ]
+      + verify                     = false
+      + version                    = "41.6.1"
+      + wait                       = false
+      + wait_for_jobs              = false
+    }
+
+  # kind_cluster.this[0] will be created
+  + resource "kind_cluster" "this" {
+      + client_certificate     = (known after apply)
+      + client_key             = (known after apply)
+      + cluster_ca_certificate = (known after apply)
+      + completed              = (known after apply)
+      + endpoint               = (known after apply)
+      + id                     = (known after apply)
+      + kubeconfig             = (known after apply)
+      + kubeconfig_path        = "/home/runner/.kube/config"
+      + name                   = "devsu-demo"
+      + node_image             = "kindest/node:v1.35.0@sha256:452d707d4862f52530247495d180205e029056831160e22870e37e3f6c1ac31f"
+      + wait_for_ready         = true
+
+      + kind_config {
+          + api_version = "kind.x-k8s.io/v1alpha4"
+          + kind        = "Cluster"
+
+          + node {
+              + role = "control-plane"
+
+              + extra_port_mappings {
+                  + container_port = 30080
+                  + host_port      = 80
+                  + protocol       = "TCP"
+                }
+              + extra_port_mappings {
+                  + container_port = 30443
+                  + host_port      = 443
+                  + protocol       = "TCP"
+                }
+            }
+          + node {
+              + role = "worker"
+            }
+          + node {
+              + role = "worker"
+            }
+        }
+    }
+
+Plan: 5 to add, 0 to change, 0 to destroy.
+
+Changes to Outputs:
+  + app_urls          = {
+      + dev  = "https://api.dev.devsu-demo.local"
+      + prod = "https://api.devsu-demo.local"
+      + test = "https://api.test.devsu-demo.local"
+    }
+  + cluster_endpoint  = (known after apply)
+  + cluster_issuer    = "devsu-demo-ca"
+  + cluster_name      = "devsu-demo"
+  + hosts_file_entry  = "127.0.0.1 api.dev.devsu-demo.local api.devsu-demo.local api.test.devsu-demo.local"
+  + ingress_class     = "traefik"
+  + kubeconfig_path   = "/home/runner/.kube/config"
+  + platform_releases = {
+      + cert-manager   = "cert-manager v1.21.2 (cert-manager)"
+      + cluster-issuer = "./charts/cluster-issuer 1.0.0 (cert-manager)"
+      + metrics-server = "metrics-server 3.14.0 (kube-system)"
+      + traefik        = "traefik 41.6.1 (traefik)"
+    }
+
+─────────────────────────────────────────────────────────────────────────────
+
+Saved the plan to: tfplan
+
+To perform exactly these actions, run the following command to apply:
+    terraform apply "tfplan"
