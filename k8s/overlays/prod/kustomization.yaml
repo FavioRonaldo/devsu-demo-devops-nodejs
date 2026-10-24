@@ -1,0 +1,74 @@
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+
+namespace: devsu-prod
+
+labels:
+  - pairs:
+      app.kubernetes.io/environment: prod
+
+resources:
+  - namespace.yaml
+  - ../../base
+
+images:
+  - name: demo-devops-nodejs
+    newName: ghcr.io/favioronaldo/devsu-demo-devops-nodejs
+    newTag: prod
+
+secretGenerator:
+  - name: db-credentials
+    envs:
+      - secrets.env
+
+patches:
+  - target:
+      kind: Ingress
+      name: api
+    patch: |-
+      - op: replace
+        path: /spec/rules/0/host
+        value: api.devsu-demo.local
+      - op: replace
+        path: /spec/tls/0/hosts/0
+        value: api.devsu-demo.local
+  - target:
+      kind: Deployment
+      name: api
+    patch: |-
+      - op: replace
+        path: /spec/replicas
+        value: 3
+      - op: replace
+        path: /spec/template/spec/containers/0/resources
+        value:
+          requests:
+            cpu: 200m
+            memory: 192Mi
+          limits:
+            cpu: 750m
+            memory: 384Mi
+  - target:
+      kind: HorizontalPodAutoscaler
+      name: api
+    patch: |-
+      - op: replace
+        path: /spec/minReplicas
+        value: 3
+      - op: replace
+        path: /spec/maxReplicas
+        value: 6
+  - target:
+      kind: PodDisruptionBudget
+      name: api
+    patch: |-
+      - op: replace
+        path: /spec/minAvailable
+        value: 2
+  - target:
+      kind: StatefulSet
+      name: postgres
+    patch: |-
+      - op: replace
+        path: /spec/volumeClaimTemplates/0/spec/resources/requests/storage
+        value: 5Gi

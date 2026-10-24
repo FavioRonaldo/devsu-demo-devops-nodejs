@@ -1,0 +1,25 @@
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: api
+  labels:
+    app.kubernetes.io/name: api
+  annotations:
+    cert-manager.io/cluster-issuer: devsu-demo-ca
+spec:
+  ingressClassName: traefik
+  tls:
+    - hosts:
+        - api.devsu-demo.local
+      secretName: api-tls
+  rules:
+    - host: api.devsu-demo.local
+      http:
+        paths:
+          - path: /
+            pathType: Prefix
+            backend:
+              service:
+                name: api
+                port:
+                  name: http

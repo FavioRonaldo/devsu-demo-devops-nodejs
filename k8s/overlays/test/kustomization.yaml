@@ -1,0 +1,41 @@
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+
+namespace: devsu-test
+
+labels:
+  - pairs:
+      app.kubernetes.io/environment: test
+
+resources:
+  - namespace.yaml
+  - ../../base
+
+images:
+  - name: demo-devops-nodejs
+    newName: ghcr.io/favioronaldo/devsu-demo-devops-nodejs
+    newTag: test
+
+secretGenerator:
+  - name: db-credentials
+    envs:
+      - secrets.env
+
+patches:
+  - target:
+      kind: Ingress
+      name: api
+    patch: |-
+      - op: replace
+        path: /spec/rules/0/host
+        value: api.test.devsu-demo.local
+      - op: replace
+        path: /spec/tls/0/hosts/0
+        value: api.test.devsu-demo.local
+  - target:
+      kind: HorizontalPodAutoscaler
+      name: api
+    patch: |-
+      - op: replace
+        path: /spec/maxReplicas
+        value: 4

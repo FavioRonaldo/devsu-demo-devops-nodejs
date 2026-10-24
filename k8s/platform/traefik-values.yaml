@@ -1,0 +1,23 @@
+ingressClass:
+  enabled: true
+  isDefaultClass: true
+
+ports:
+  web:
+    http:
+      redirections:
+        entryPoint:
+          to: websecure
+          scheme: https
+          permanent: true
+
+service:
+  type: LoadBalancer
+
+resources:
+  requests:
+    cpu: 50m
+    memory: 64Mi
+  limits:
+    cpu: 500m
+    memory: 256Mi

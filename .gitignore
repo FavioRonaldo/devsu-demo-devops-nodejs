@@ -129,3 +129,5 @@ dist
 .terraform/
 *.tfstate
 *.tfstate.*
+
+k8s/overlays/*/secrets.env

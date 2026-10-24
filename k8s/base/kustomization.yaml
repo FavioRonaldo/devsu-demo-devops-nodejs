@@ -1,0 +1,34 @@
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+
+labels:
+  - pairs:
+      app.kubernetes.io/part-of: devsu-demo
+      app.kubernetes.io/managed-by: kustomize
+
+resources:
+  - namespace/resourcequota.yaml
+  - namespace/limitrange.yaml
+  - namespace/networkpolicy.yaml
+  - api/serviceaccount.yaml
+  - api/deployment.yaml
+  - api/service.yaml
+  - api/hpa.yaml
+  - api/pdb.yaml
+  - api/ingress.yaml
+  - api/networkpolicy.yaml
+  - postgres/statefulset.yaml
+  - postgres/service.yaml
+  - postgres/networkpolicy.yaml
+
+configMapGenerator:
+  - name: api-config
+    literals:
+      - NODE_ENV=production
+      - PORT=8000
+      - SHUTDOWN_TIMEOUT_MS=10000
+      - DATABASE_DIALECT=postgres
+      - DATABASE_HOST=postgres
+      - DATABASE_PORT=5432
+      - DATABASE_NAME=users
+      - DATABASE_LOGGING=false
