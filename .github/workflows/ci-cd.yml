@@ -23,12 +23,18 @@ concurrency:
 permissions:
   contents: read
 
+defaults:
+  run:
+    shell: bash
+
 env:
   NODE_VERSION: "24.21.0"
   HADOLINT_VERSION: "v2.12.0"
   TRIVY_VERSION: "0.75.0"
   KIND_VERSION: "v0.33.0"
   KUSTOMIZE_VERSION: "v5.8.3"
+  TERRAFORM_VERSION: "1.16.5"
+  TFLINT_VERSION: "v0.64.0"
   IMAGE_NAME: ghcr.io/favioronaldo/devsu-demo-devops-nodejs
   DEPLOY_ENV: ${{ github.ref_name == 'Prod' && 'prod' || github.ref_name == 'Test' && 'test' || 'dev' }}
   PUBLISH: ${{ github.event_name != 'pull_request' }}
@@ -137,6 +143,34 @@ jobs:
         with:
           sarif_file: trivy-fs.sarif
           category: trivy-fs
+
+  terraform-validate:
+    name: Terraform validate
+    runs-on: ubuntu-24.04
+    defaults:
+      run:
+        working-directory: terraform
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v7.0.1
+
+      - name: Setup Terraform
+        uses: hashicorp/setup-terraform@v4.0.1
+        with:
+          terraform_version: ${{ env.TERRAFORM_VERSION }}
+          terraform_wrapper: false
+
+      - name: Terraform fmt
+        run: terraform fmt -check -recursive -diff
+
+      - name: Terraform init
+        run: terraform init -backend=false -input=false
+
+      - name: Terraform validate
+        run: terraform validate
+
+      - name: TFLint
+        run: docker run --rm -v "$PWD:/data" -w /data "ghcr.io/terraform-linters/tflint:${TFLINT_VERSION}" --format compact
 
   docker:
     name: Docker build, scan & push
@@ -250,7 +284,9 @@ jobs:
 
   deploy:
     name: Deploy to Kubernetes
-    needs: docker
+    needs:
+      - docker
+      - terraform-validate
     if: github.event_name != 'pull_request'
     runs-on: ubuntu-24.04
     environment:
@@ -282,17 +318,35 @@ jobs:
           sudo install -m 0755 kustomize /usr/local/bin/kustomize
           kind version && kustomize version && kubectl version --client && helm version --short
 
-      - name: Create Kubernetes cluster (kind)
-        run: |
-          kind create cluster --config k8s/platform/kind-cluster.yaml --wait 120s
-          kubectl get nodes -o wide
+      - name: Setup Terraform
+        uses: hashicorp/setup-terraform@v4.0.1
+        with:
+          terraform_version: ${{ env.TERRAFORM_VERSION }}
+          terraform_wrapper: false
 
-      - name: Install platform (metrics-server, cert-manager, Traefik)
+      - name: Terraform plan (kind cluster + platform)
+        working-directory: terraform
         run: |
-          bash k8s/platform/install.sh \
-            --set service.type=NodePort \
-            --set ports.web.nodePort=30080 \
-            --set ports.websecure.nodePort=30443
+          terraform init -input=false -no-color | tee ../terraform-init.txt
+          terraform plan -input=false -no-color -out=tfplan | tee ../terraform-plan.txt
+
+      - name: Terraform apply
+        working-directory: terraform
+        run: |
+          terraform apply -input=false -no-color -auto-approve tfplan | tee ../terraform-apply.txt
+          terraform output -no-color | tee ../terraform-output.txt
+          kubectl get nodes -o wide
+          kubectl -n traefik rollout status deployment/traefik --timeout=180s
+          kubectl -n cert-manager wait certificate/devsu-demo-ca --for=condition=Ready --timeout=120s
+          kubectl get clusterissuer
+
+      - name: Upload Terraform evidence
+        if: always()
+        uses: actions/upload-artifact@v7.0.2
+        with:
+          name: terraform-${{ env.DEPLOY_ENV }}
+          path: terraform-*.txt
+          retention-days: 30
 
       - name: Login to GHCR
         uses: docker/login-action@v4.6.0

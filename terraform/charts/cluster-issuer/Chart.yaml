@@ -1,0 +1,5 @@
+apiVersion: v2
+name: cluster-issuer
+description: Self-managed CA and cert-manager ClusterIssuers used by the application Ingress
+type: application
+version: 1.0.0
