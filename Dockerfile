@@ -1,4 +1,4 @@
-FROM node:24.20.0-alpine3.24 AS deps
+FROM node:24.21.0-alpine3.24 AS deps
 
 WORKDIR /app
 
@@ -8,7 +8,7 @@ RUN npm ci --omit=dev --no-audit --no-fund \
     && npm cache clean --force
 
 
-FROM node:24.20.0-alpine3.24 AS runtime
+FROM node:24.21.0-alpine3.24 AS runtime
 
 LABEL org.opencontainers.image.title="demo-devops-nodejs" \
       org.opencontainers.image.description="Users REST API" \
@@ -27,7 +27,8 @@ COPY package.json index.js app.js ./
 COPY shared ./shared
 COPY users ./users
 
-RUN rm -rf /usr/local/lib/node_modules/npm /usr/local/lib/node_modules/corepack \
+RUN apk upgrade --no-cache \
+    && rm -rf /usr/local/lib/node_modules/npm /usr/local/lib/node_modules/corepack \
            /usr/local/bin/npm /usr/local/bin/npx /usr/local/bin/corepack \
     && mkdir -p /app/data \
     && chown node:node /app/data

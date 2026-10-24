@@ -18,3 +18,5 @@ docs
 README.md
 eslint.config.js
 .babelrc
+scripts
+sonar-project.properties
