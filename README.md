@@ -11,7 +11,7 @@ Solución de la prueba técnica DevOps de Devsu sobre la aplicación `demo-devop
 | Entregable | Enlace |
 |---|---|
 | Repositorio público | https://github.com/FavioRonaldo/devsu-demo-devops-nodejs |
-| Ejecución del pipeline | https://github.com/FavioRonaldo/devsu-demo-devops-nodejs/actions/runs/40072597629 |
+| Ejecución del pipeline | https://github.com/FavioRonaldo/devsu-demo-devops-nodejs/actions/runs/40273843952 |
 | Historial de ejecuciones | https://github.com/FavioRonaldo/devsu-demo-devops-nodejs/actions/workflows/ci-cd.yml |
 | Imagen Docker pública (GHCR) | https://github.com/FavioRonaldo/devsu-demo-devops-nodejs/pkgs/container/devsu-demo-devops-nodejs |
 | Análisis estático y cobertura (SonarCloud) | https://sonarcloud.io/dashboard?id=FavioRonaldo_devsu-demo-devops-nodejs&branch=Dev |
@@ -225,23 +225,22 @@ Definido en [.github/workflows/ci-cd.yml](.github/workflows/ci-cd.yml).
 
 ```mermaid
 flowchart LR
-    push(["push / pull request"]) --> build
-    push --> scan
-    push --> tf
-
-    build["Build, lint & unit tests<br/>npm ci · ESLint · hadolint<br/>Jest + cobertura"] --> sonar["SonarCloud<br/>quality gate"]
-    build --> docker
-    scan["Dependency, secret & IaC scan<br/>npm audit · Trivy fs · Trivy config"] --> docker
-    tf["Terraform validate<br/>fmt · validate · tflint"] --> deploy
-
-    docker["Docker<br/>build → Trivy image → smoke test<br/>→ push GHCR + SBOM"] --> deploy["Deploy to Kubernetes<br/>terraform apply → kubectl apply overlay<br/>→ smoke test HTTPS"]
+    push(["push / pull request"]) --> scan
+    scan["1. Dependency, secret & IaC scan<br/>npm audit · Trivy fs · Trivy config"] --> build
+    build["2. Build, lint & unit tests<br/>npm ci · ESLint · hadolint<br/>Jest + cobertura"] --> sonar
+    sonar["3. SonarCloud<br/>espera el quality gate"] --> tf
+    tf["4. Terraform validate<br/>fmt · validate · tflint"] --> docker
+    docker["5. Docker<br/>build → Trivy image → smoke test<br/>→ push GHCR + SBOM"] --> deploy
+    deploy["6. Deploy to Kubernetes<br/>terraform apply → kubectl apply overlay<br/>→ smoke test HTTPS"]
 ```
+
+Los jobs se ejecutan en serie, de lo más rápido y barato a lo más costoso: si un control falla, el pipeline se detiene antes de construir o publicar nada. El análisis de dependencias va primero porque no necesita compilar; SonarCloud usa la cobertura generada en el paso anterior y bloquea el pipeline si el quality gate falla; la infraestructura se valida antes de publicar la imagen, y solo una imagen que pasó todos los controles llega al despliegue.
 
 | Paso requerido | Implementación |
 |---|---|
 | Construcción de código | `npm ci` con Node 24 y caché de npm |
 | Pruebas unitarias | Jest (23 pruebas) |
-| Análisis de código estático | ESLint, hadolint y SonarCloud (quality gate) |
+| Análisis de código estático | ESLint, hadolint y SonarCloud (el pipeline espera y exige el quality gate) |
 | Cobertura del código | Jest con umbral del 80 %; reporte lcov a SonarCloud y resumen en la ejecución |
 | Construir y subir la imagen | Buildx con caché, push a GHCR con SBOM y provenance |
 | Escaneo de vulnerabilidades (opcional) | `npm audit`, Trivy sobre dependencias, secretos, Dockerfile, manifiestos, Terraform y la imagen final; resultados SARIF en la pestaña Security |
