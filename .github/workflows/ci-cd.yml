@@ -40,8 +40,44 @@ env:
   PUBLISH: ${{ github.event_name != 'pull_request' }}
 
 jobs:
+  security-scan:
+    name: Dependency, secret & IaC scan
+    runs-on: ubuntu-24.04
+    permissions:
+      contents: read
+      security-events: write
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v7.0.1
+
+      - name: Setup Trivy
+        uses: ./.github/actions/setup-trivy
+        with:
+          version: ${{ env.TRIVY_VERSION }}
+
+      - name: npm audit (production dependencies)
+        run: npm audit --omit=dev --audit-level=high
+
+      - name: Trivy dependencies & secrets
+        run: trivy fs --scanners vuln,secret --severity HIGH,CRITICAL --ignore-unfixed --exit-code 1 .
+
+      - name: Trivy Dockerfile & Kubernetes misconfigurations
+        run: trivy config --severity HIGH,CRITICAL --exit-code 1 .
+
+      - name: Trivy SARIF report
+        if: always()
+        run: trivy fs --scanners vuln,secret,misconfig --format sarif --output trivy-fs.sarif .
+
+      - name: Upload SARIF to GitHub Security
+        if: always()
+        uses: github/codeql-action/upload-sarif@v4.38.3
+        with:
+          sarif_file: trivy-fs.sarif
+          category: trivy-fs
+
   build-test:
     name: Build, lint & unit tests
+    needs: security-scan
     runs-on: ubuntu-24.04
     steps:
       - name: Checkout
@@ -109,43 +145,9 @@ jobs:
         if: env.SONAR_TOKEN == ''
         run: echo "::notice title=SonarCloud::SONAR_TOKEN secret is not configured, analysis skipped"
 
-  security-scan:
-    name: Dependency, secret & IaC scan
-    runs-on: ubuntu-24.04
-    permissions:
-      contents: read
-      security-events: write
-    steps:
-      - name: Checkout
-        uses: actions/checkout@v7.0.1
-
-      - name: Setup Trivy
-        uses: ./.github/actions/setup-trivy
-        with:
-          version: ${{ env.TRIVY_VERSION }}
-
-      - name: npm audit (production dependencies)
-        run: npm audit --omit=dev --audit-level=high
-
-      - name: Trivy dependencies & secrets
-        run: trivy fs --scanners vuln,secret --severity HIGH,CRITICAL --ignore-unfixed --exit-code 1 .
-
-      - name: Trivy Dockerfile & Kubernetes misconfigurations
-        run: trivy config --severity HIGH,CRITICAL --exit-code 1 .
-
-      - name: Trivy SARIF report
-        if: always()
-        run: trivy fs --scanners vuln,secret,misconfig --format sarif --output trivy-fs.sarif .
-
-      - name: Upload SARIF to GitHub Security
-        if: always()
-        uses: github/codeql-action/upload-sarif@v4.38.3
-        with:
-          sarif_file: trivy-fs.sarif
-          category: trivy-fs
-
   terraform-validate:
     name: Terraform validate
+    needs: sonarcloud
     runs-on: ubuntu-24.04
     defaults:
       run:
@@ -174,9 +176,7 @@ jobs:
 
   docker:
     name: Docker build, scan & push
-    needs:
-      - build-test
-      - security-scan
+    needs: terraform-validate
     runs-on: ubuntu-24.04
     permissions:
       contents: read
@@ -284,9 +284,7 @@ jobs:
 
   deploy:
     name: Deploy to Kubernetes
-    needs:
-      - docker
-      - terraform-validate
+    needs: docker
     if: github.event_name != 'pull_request'
     runs-on: ubuntu-24.04
     environment:
